@@ -1,0 +1,64 @@
+<html>
+
+<head></head>
+
+<body>
+    <p>
+    <div>Payload: </div>
+    <textarea id="payload" cols="125" rows="10"></textarea>
+    </p>
+
+    <p>
+    <div>Public key:</div>
+    <textarea id="public" readonly cols="125" rows="10"></textarea>
+    </p>
+
+    <p>
+    <div>Signed:</div>
+    <textarea id="signed" readonly cols="125" rows="10"></textarea>
+    </p>
+    <button id="btn">Submit</button>
+
+    <script>
+        document.getElementById("btn").addEventListener("click", async function () {
+            const payloadTextArea = document.getElementById('payload');
+            const publicTextArea = document.getElementById('public');
+            const signedTextArea = document.getElementById('signed');
+
+            if (!payloadTextArea.value) {
+                alert("Please provide a payload");
+                return;
+            }
+
+            const encoded = new TextEncoder().encode(payloadTextArea.value);
+            const keyPair = await window.crypto.subtle.generateKey(
+                {
+                    name: "RSA-PSS",
+                    modulusLength: 4096,
+                    publicExponent: new Uint8Array([1, 0, 1]),
+                    hash: "SHA-256"
+                },
+                false,
+                ["sign"]
+            );
+
+            const jwk = await window.crypto.subtle.exportKey('jwk', keyPair.publicKey);
+            publicTextArea.value = JSON.stringify(jwk);
+
+            const signature = await window.crypto.subtle.sign(
+                {
+                    name: "RSA-PSS",
+                    saltLength: 32,
+                },
+                keyPair.privateKey,
+                encoded
+            );
+
+            const signBase64 = btoa(String.fromCharCode(...new Uint8Array(signature)));
+            signedTextArea.value = signBase64;
+            debugger;
+        });
+    </script>
+</body>
+
+</html>
